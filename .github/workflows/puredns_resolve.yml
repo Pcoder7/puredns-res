@@ -1,0 +1,108 @@
+name: Parallel PureDNS Split & Resolve
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  LINES_PER_CHUNK: 100000  # Number of lines per chunk
+
+jobs:
+  prepare_matrix:
+    name: Prepare chunk matrix
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pcoder7/spider-puredns-actions:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Locate subdomains files
+        id: find_subs
+        run: |
+          files=$(find . -type f -name 'subdomains.txt' | sed 's|\./||')
+          if [ -z "$files" ]; then
+            echo "Error: No subdomains.txt files found in the repository!"
+            exit 1
+          fi
+          echo "Found subdomains files: $files"
+          subs_jq=$(echo "$files" | jq -R -s -c 'split("\n") | map(select(length>0))')
+          echo "subs_jq=$subs_jq" >> $GITHUB_OUTPUT
+
+      - name: Split into chunks & build matrix
+        id: set_matrix
+        run: |
+          MATRIX='[]'
+          echo "Iterating subdomains files..."
+          echo "${{ steps.find_subs.outputs.subs_jq }}" | jq -r '.[]' | while read -r path; do
+            domain=$(dirname "$path")
+            mkdir -p "chunks/$domain"
+            split -l "$LINES_PER_CHUNK" -a 3 --numeric-suffixes=1 "$path" "chunks/$domain/chunk_"
+            # Ensure chunks exist
+            shopt -s nullglob
+            chunk_files=(chunks/$domain/chunk_*)
+            if [ ${#chunk_files[@]} -eq 0 ]; then
+              echo "Error: No chunks generated for domain $domain"
+              exit 1
+            fi
+            for f in "${chunk_files[@]}"; do
+              MATRIX=$(jq -n --argjson m "$MATRIX" --arg d "$domain" --arg c "$f" '$m + [{domain: $d, chunk: $c}]')
+            done
+          done
+          if [ "$MATRIX" = '[]' ]; then
+            echo "Error: Matrix is empty after processing subdomains.txt files"
+            exit 1
+          fi
+          echo "matrix<<EOF" >> $GITHUB_OUTPUT
+          echo "$MATRIX" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  resolve:
+    name: Split & resolve subdomains
+    needs: prepare_matrix
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/pcoder7/spider-puredns-actions:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_TOKEN }}
+    strategy:
+      max-parallel: 20
+      fail-fast: false
+      matrix:
+        pair: ${{ fromJson(needs.prepare_matrix.outputs.matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Ensure resolvers.txt exists
+        run: |
+          if [ ! -f resolvers.txt ]; then
+            echo '1.1.1.1' > resolvers.txt
+          fi
+
+      - name: Resolve chunk via PureDNS
+        id: run_resolve
+        run: |
+          DOMAIN=${{ matrix.pair.domain }}
+          CHUNK=${{ matrix.pair.chunk }}
+          OUT_DIR="results/$DOMAIN"
+          mkdir -p "$OUT_DIR"
+          CHUNK_BASENAME=$(basename "$CHUNK")
+          OUT_FILE="$OUT_DIR/resolved_${CHUNK_BASENAME}"
+
+          echo "Resolving chunk '$CHUNK' for domain '$DOMAIN'..."
+          puredns resolve "$CHUNK" -r resolvers.txt --resolvers-trusted resolvers-trusted.txt --write "$OUT_FILE" --wildcard-tests 200 --wildcard-batch 100000 
+          echo "CHUNK_BASENAME=$CHUNK_BASENAME" >> $GITHUB_ENV
+
+      - name: Upload resolved results
+        uses: actions/upload-artifact@v4
+        with:
+          name: resolved_${{ matrix.pair.domain }}_${{ env.CHUNK_BASENAME }}
+          path: results/${{ matrix.pair.domain }}/resolved_${{ env.CHUNK_BASENAME }}
+          retention-days: 1
