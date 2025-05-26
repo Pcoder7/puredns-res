@@ -82,6 +82,7 @@ jobs:
   resolve:
     name: Split & resolve subdomains
     needs: prepare_matrix
+    shell: bash
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/pcoder7/spider-puredns-actions:latest
