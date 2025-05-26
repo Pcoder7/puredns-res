@@ -78,7 +78,14 @@ jobs:
           echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
           echo "$MATRIX" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT" 
-      
+
+      - name: Print matrix.json (for debug)
+        run: cat matrix.json
+
+      - name: Set matrix output
+        id: set-matrix
+        run: |
+          echo "matrix=$(cat matrix.json)" >> "$GITHUB_OUTPUT"      
       - name: Upload chunks and resolvers
         uses: actions/upload-artifact@v4
         with:
