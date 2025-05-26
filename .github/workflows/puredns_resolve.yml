@@ -93,7 +93,6 @@ jobs:
       max-parallel: 20
       fail-fast: false
       matrix:
-      matrix:
         pair: ${{ fromJson(
           needs.prepare_matrix.outputs.matrix == '' 
             ? '[]' 
