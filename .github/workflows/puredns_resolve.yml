@@ -91,7 +91,7 @@ jobs:
         password: ${{ secrets.GHCR_TOKEN }}
     strategy:
       max-parallel: 20
-      fail-fast: false
+      
       matrix:
         pair: ${{ fromJson(needs.prepare_matrix.outputs.matrix == '' ? '[]' : needs.prepare_matrix.outputs.matrix) }}
 
