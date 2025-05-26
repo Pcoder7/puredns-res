@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 env:
-  LINES_PER_CHUNK: 100000  # Number of lines per chunk
+  LINES_PER_CHUNK: 500000  # Number of lines per chunk
 
 jobs:
   prepare_matrix:
@@ -95,9 +95,11 @@ jobs:
           mkdir -p "$OUT_DIR"
           CHUNK_BASENAME=$(basename "$CHUNK")
           OUT_FILE="$OUT_DIR/resolved_${CHUNK_BASENAME}"
+          WILDCARD_FILE=""$OUT_DIR/wildcard_${CHUNK_BASENAME}""
 
           echo "Resolving chunk '$CHUNK' for domain '$DOMAIN'..."
-          puredns resolve "$CHUNK" -r resolvers.txt --resolvers-trusted resolvers-trusted.txt --write "$OUT_FILE" --wildcard-tests 200 --wildcard-batch 100000 
+          puredns resolve "$CHUNK" -r resolvers.txt --resolvers-trusted resolvers-trusted.txt --write "$OUT_FILE" --write-wildcards "$WILDCARD_FILE" --wildcard-batch 100000 --wildcard-tests 250
+          # Export basename for artifact naming
           echo "CHUNK_BASENAME=$CHUNK_BASENAME" >> $GITHUB_ENV
 
       - name: Upload resolved results
