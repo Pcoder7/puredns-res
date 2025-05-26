@@ -39,29 +39,45 @@ jobs:
         shell: bash
         run: |
           MATRIX='[]'
+      
+          # Initialize empty JSON array
+          MATRIX='[]'
           echo "Iterating subdomains files..."
-          echo "${{ steps.find_subs.outputs.subs_jq }}" | jq -r '.[]' | while read -r path; do
-            domain=$(dirname "$path")
-            mkdir -p "chunks/$domain"
-            split -l "$LINES_PER_CHUNK" -a 3 --numeric-suffixes=1 "$path" "chunks/$domain/chunk_"
-            # Ensure chunks exist
-            shopt -s nullglob
-            chunk_files=(chunks/$domain/chunk_*)
-            if [ ${#chunk_files[@]} -eq 0 ]; then
-              echo "Error: No chunks generated for domain $domain"
-              exit 1
-            fi
-            for f in "${chunk_files[@]}"; do
-              MATRIX=$(echo "$MATRIX" | jq -c --arg d "$domain" --arg c "$chunk" '. + [{domain:$d,chunk:$c}]'
-            done
-          done
-          if [ "$MATRIX" = '[]' ]; then
-            echo "Error: Matrix is empty after processing subdomains.txt files"
+      
+          # Gather all subdomains.txt paths
+          files=( $(find . -type f -name "subdomains.txt") )
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "Error: no subdomains.txt files found"
             exit 1
           fi
-          echo "matrix<<EOF" >> $GITHUB_OUTPUT
-          echo "$MATRIX" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+      
+          for file in "${files[@]}"; do
+            domain=$(basename "$(dirname "$file")")
+            echo "  • Found subdomains for $domain in $file"
+      
+            mkdir -p "chunks/$domain"
+            split -l "$LINES_PER_CHUNK" -a 3 --numeric-suffixes=1 "$file" "chunks/$domain/chunk_"
+      
+            # Enable nullglob so that if no chunks match, the glob expands to nothing
+            shopt -s nullglob
+            for chunk in chunks/"$domain"/chunk_*; do
+              # Append this {domain,chunk} object to our JSON array
+              MATRIX=$(printf '%s' "$MATRIX" \
+                | jq -c --arg d "$domain" --arg c "$chunk" '. + [{domain:$d,chunk:$c}]')
+            done
+            shopt -u nullglob
+          done
+      
+          # Fail early if we never added any chunks
+          if [ "$MATRIX" = '[]' ]; then
+            echo "Error: no chunks generated for any domain"
+            exit 1
+          fi
+      
+          # Export matrix for next job
+          echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT" 
 
   resolve:
     name: Split & resolve subdomains
