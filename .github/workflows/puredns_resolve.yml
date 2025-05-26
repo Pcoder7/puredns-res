@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 env:
-  LINES_PER_CHUNK: 500000  # Number of lines per chunk
+  LINES_PER_CHUNK: 100000  # Number of lines per chunk
 
 jobs:
   prepare_matrix:
@@ -52,7 +52,7 @@ jobs:
               exit 1
             fi
             for f in "${chunk_files[@]}"; do
-              MATRIX=$(jq -n --argjson m "$MATRIX" --arg d "$domain" --arg c "$f" '$m + [{domain: $d, chunk: $c}]')
+              MATRIX=$(echo "$MATRIX" | jq -c --arg d "$domain" --arg c "$chunk" '. + [{domain:$d,chunk:$c}]'
             done
           done
           if [ "$MATRIX" = '[]' ]; then
@@ -84,11 +84,12 @@ jobs:
       - name: Ensure resolvers.txt exists
         run: |
           if [ ! -f resolvers.txt ]; then
-            echo '1.1.1.1' > resolvers.txt
+            echo '1.1.1.1'
           fi
 
       - name: Resolve chunk via PureDNS
         id: run_resolve
+        shell: bash
         run: |
           DOMAIN=${{ matrix.pair.domain }}
           CHUNK=${{ matrix.pair.chunk }}
