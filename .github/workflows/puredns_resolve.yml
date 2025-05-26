@@ -98,10 +98,9 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GHCR_TOKEN }}
     strategy:
-      max-parallel: 20
-      
+      max-parallel: 20    
       matrix:
-        pair: ${{ fromJson(needs.prepare_matrix.outputs.matrix == '' ? '[]' : needs.prepare_matrix.outputs.matrix) }}
+        pair: ${{ fromJson(needs.prepare_matrix.outputs.matrix) }}
 
     steps:
       - name: Checkout repository
