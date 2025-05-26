@@ -36,6 +36,7 @@ jobs:
 
       - name: Split into chunks & build matrix
         id: set_matrix
+        shell: bash
         run: |
           MATRIX='[]'
           echo "Iterating subdomains files..."
