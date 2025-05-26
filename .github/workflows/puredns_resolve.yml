@@ -76,9 +76,9 @@ jobs:
 
           echo "$MATRIX" > matrix.json
           # Export matrix for next job
-          echo "matrix<<EOF" >> "$GITHUB_OUTPUT"
+       
           echo "$MATRIX" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT" 
+        
          
 
       - name: Print matrix.json (for debug)
