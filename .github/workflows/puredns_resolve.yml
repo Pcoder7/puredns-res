@@ -34,8 +34,9 @@ jobs:
           echo "DEBUG: Listing all files in repository root and subdirectories:"
           find . -print
           echo "-----------------------------------------------------"
-          echo "DEBUG: Specifically looking for subdomains.txt files:"
-          find . -type f -name 'subdomains.txt' -print || echo "DEBUG: 'find' for subdomains.txt failed or found nothing."
+          echo "DEBUG: Specifically looking for majestic_million.txt  files:"
+          wget https://raw.githubusercontent.com/hadriansecurity/sanicdns/main/majestic_million.txt
+          find . -type f -name 'majestic_million.txt ' -print || echo "DEBUG: 'find' for majestic_million.txt  failed or found nothing."
           echo "-----------------------------------------------------"
           echo "DEBUG: Checking for 'jq' command..."
           if ! command -v jq &> /dev/null; then
@@ -65,10 +66,12 @@ jobs:
           JSON_MATRIX='[]'
           echo "INFO: Initializing matrix as: $JSON_MATRIX"
           
-          echo "INFO: Locating subdomains.txt files..."
+          echo "INFO: Locating majestic_million.txt  files..."
           
           # Using a temporary file for 'find' results for robustness with special filenames
-          find . -type f -name "subdomains.txt" -print0 > found_files.tmp
+          # find . -type f -name "majestic_million.txt " -print0 > found_files.tmp
+           
+          cat majestic_million.txt > found_files.tmp
           
           files=()
           while IFS= read -r -d $'\0' file_path_from_find; do
@@ -80,10 +83,10 @@ jobs:
           rm found_files.tmp
 
           if [ "${#files[@]}" -eq 0 ]; then
-            echo "WARNING: No 'subdomains.txt' files found using 'find . -type f -name \"subdomains.txt\"'."
+            echo "WARNING: No 'majestic_million.txt ' files found using 'find . -type f -name \"majestic_million.txt \"'."
             echo "INFO: Matrix will remain '[]'."
           else
-            echo "INFO: Found ${#files[@]} 'subdomains.txt' file(s):"
+            echo "INFO: Found ${#files[@]} 'majestic_million.txt ' file(s):"
             printf "  => '%s'\n" "${files[@]}"
 
             for file_path in "${files[@]}"; do
@@ -93,7 +96,7 @@ jobs:
               domain_dir=$(dirname "$file_path")
               # If file is in root, dirname is '.', use a default or filename
               if [ "$domain_dir" == "." ]; then
-                domain=$(basename "$file_path" .txt) # e.g. subdomains if file is subdomains.txt in root
+                domain=$(basename "$file_path" .txt) # e.g. subdomains if file is majestic_million.txt  in root
               else
                 domain=$(basename "$domain_dir")
               fi
