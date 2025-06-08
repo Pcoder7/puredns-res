@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 env:
-  LINES_PER_CHUNK: 100000  # Number of lines per chunk
+  LINES_PER_CHUNK: 50000  # Number of lines per chunk
 
 jobs:
   prepare_matrix:
