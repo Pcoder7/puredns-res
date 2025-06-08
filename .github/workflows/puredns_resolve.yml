@@ -71,7 +71,8 @@ jobs:
           # Using a temporary file for 'find' results for robustness with special filenames
           # find . -type f -name "majestic_million.txt " -print0 > found_files.tmp
            
-          cat majestic_million.txt > found_files.tmp
+          # cat majestic_million.txt > found_files.tmp
+          find . -type f -name "majestic_million.txt" -print0 > found_files.tmp
           
           files=()
           while IFS= read -r -d $'\0' file_path_from_find; do
@@ -83,7 +84,9 @@ jobs:
           rm found_files.tmp
 
           if [ "${#files[@]}" -eq 0 ]; then
-            echo "WARNING: No 'majestic_million.txt ' files found using 'find . -type f -name \"majestic_million.txt \"'."
+            # echo "WARNING: No 'majestic_million.txt ' files found using 'find . -type f -name \"majestic_million.txt \"'."
+            
+             echo "WARNING: No 'majestic_million.txt' files found using 'find . -type f -name \"majestic_million.txt\"'."
             echo "INFO: Matrix will remain '[]'."
           else
             echo "INFO: Found ${#files[@]} 'majestic_million.txt ' file(s):"
