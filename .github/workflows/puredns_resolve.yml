@@ -284,7 +284,7 @@ jobs:
           WILDCARD_FILE=""$OUT_DIR/wildcard_${CHUNK_BASENAME}""
 
           echo "Resolving chunk '$CHUNK' for domain '$DOMAIN'..."
-          puredns resolve "$CHUNK" -r resolvers.txt --resolvers-trusted resolvers-trusted.txt --write "$OUT_FILE" --write-wildcards "$WILDCARD_FILE" --wildcard-batch 100000 --wildcard-tests 250
+          puredns resolve "$CHUNK" -r resolvers.txt --resolvers-trusted resolvers-trusted.txt -q --write "$OUT_FILE" --write-wildcards "$WILDCARD_FILE" --wildcard-batch 100000 --wildcard-tests 500
           # Export basename for artifact naming
           echo "CHUNK_BASENAME=$CHUNK_BASENAME" >> $GITHUB_ENV
 
