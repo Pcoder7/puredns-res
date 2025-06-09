@@ -314,14 +314,14 @@ jobs:
           #puredns resolve "$CHUNK" -r resolvers.txt --resolvers-trusted resolvers-trusted.txt -q --write "$OUT_FILE" --write-wildcards "$WILDCARD_FILE" --wildcard-batch 100000 --wildcard-tests 500
           sudo sanicdns \
             -i "$CHUNK" \
-            -r 3000 \
+            -r 1000 \
             -c 5000 \
             -l $LOG_FILE \
             --resolvers resolvers.txt \
             -o "$OUT_FILE" \
             -w 4 \
             --num-retries 10 \
-            --timeout 15000
+            --timeout 12000
           # Export basename for artifact naming
           echo "CHUNK_BASENAME=$CHUNK_BASENAME" >> $GITHUB_ENV
 
